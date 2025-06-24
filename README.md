@@ -106,7 +106,7 @@ Handles validation, JSON construction, API callout, and result processing.
 
 ## 📷 Screenshots
 
-| Named Credential Setup | Auth Flow | Invoice Sync Output |
+| Connecting Screen | Salesforce | Xero |
 |------------------------|-----------|---------------------|
 | ![auth](./Screenshots/auth_provider.png) | ![named](./Screenshots/named_credential.png) | ![xero](./Screenshots/xero_successful_invoice.png) |
 
