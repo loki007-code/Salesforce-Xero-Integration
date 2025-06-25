@@ -1,6 +1,7 @@
 # 🔁 Xero-Salesforce Invoice Integration
 
 This project demonstrates how to integrate Salesforce with Xero using OAuth 2.0 and Apex. It allows you to sync custom `Invoice__c` records from Salesforce to Xero Accounting once the status is marked as **"Synced"**.
+Click on the above documentation to see full steps.
 
 ---
 
@@ -70,15 +71,6 @@ This project demonstrates how to integrate Salesforce with Xero using OAuth 2.0 
 
 ---
 
-## 💻 Apex Code
-
-- 📄 [`XeroInvoiceService.cls`](ApexClasses/XeroInvoiceService.cls)
-- ⚙️ [`InvoiceTrigger.trigger`](Triggers/InvoiceTrigger.trigger)
-
-Handles validation, JSON construction, API callout, and result processing.
-
----
-
 ## 🧪 Testing
 
 1. Authenticate Named Credential
@@ -114,19 +106,15 @@ Handles validation, JSON construction, API callout, and result processing.
 
 ## 📄 Documentation
 
-Full config steps and code are available in [`Documentation/Xero-Salesforce-Integration-Full-Config.docx`](Documentation/Xero-Salesforce-Integration-Full-Config.docx)
+Full config steps and code are available in [`Xero-Salesforce-Integration-Full-Config.docx`](Xero-Salesforce-Integration-Full-Config.docx)
 
----
 
-## 💡 Tip
-
-To automate authentication token refresh, explore **JWT flow** or **Refresh Token flow** in Xero Developer documentation.
 
 ---
 
 ## 🙌 Credits
 
-Developed by [Your Name], Salesforce Developer at Flacrev.
+Developed by Logesh Aravindh, Salesforce Developer.
 
 ---
 
