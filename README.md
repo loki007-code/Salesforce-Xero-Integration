@@ -106,7 +106,7 @@ Click on the above documentation to see full steps.
 
 ## 📄 Documentation
 
-Full config steps and code are available in [`Salesforce-Xero-Integration/Xero-Salesforce Integration Documentation Full Config.docx`](Xero-Salesforce-Integration-Full-Config.docx)
+Full config steps and code are available in [`Xero-Salesforce Integration Documentation Full Config.docx`](Salesforce-Xero-Integration/Xero-Salesforce Integration Documentation Full Config.docx)
 
 
 
