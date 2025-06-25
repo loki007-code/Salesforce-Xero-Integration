@@ -100,7 +100,7 @@ Click on the above documentation to see full steps.
 
 | Connecting Screen | Salesforce | Xero |
 |------------------------|-----------|---------------------|
-| ![auth](assets/1.png) | ![named](assets/2.png) | ![xero](assets/3.png) |
+| ![auth](assests/1.png) | ![named](assests/2.png) | ![xero](assests/3.png) |
 
 ---
 
