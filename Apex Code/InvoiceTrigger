@@ -1,0 +1,12 @@
+trigger InvoiceTrigger on Invoice__c (after insert, after update) {
+    for (Invoice__c inv : Trigger.new) {
+        Invoice__c oldInv = Trigger.isUpdate ? Trigger.oldMap.get(inv.Id) : null;
+
+        Boolean isSynced = inv.X_Status__c == 'Synced';
+        Boolean wasNotSynced = oldInv != null && oldInv.X_Status__c != 'Synced';
+
+        if ((Trigger.isInsert && isSynced) || (Trigger.isUpdate && isSynced && wasNotSynced)) {
+            XeroInvoiceService.sendInvoiceToXeroAsync(inv.Id); 
+        }
+    }
+}
