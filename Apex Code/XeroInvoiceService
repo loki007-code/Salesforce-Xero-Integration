@@ -1,0 +1,130 @@
+public with sharing class XeroInvoiceService {
+    
+    @future(callout=true)
+    public static void sendInvoiceToXeroAsync(Id invoiceId) {
+        sendInvoiceToXero(invoiceId);
+    }
+    
+    public static void sendInvoiceToXero(Id invoiceId) {
+        try {
+            Invoice__c inv = [
+                SELECT Id, Name, X_Status__c, Due_Date__c, Invoice_Date__c,
+                Xero_Invoice_ID__c, Xero_Status__c, Xero_Response__c,
+                (SELECT X_Description__c, Quantity__c, X_Unit_Amount__c, AccountCode__c, TaxType__c, Product_Name__c, Product_Name__r.Id
+                 FROM Invoice_Lines1__r)
+                FROM Invoice__c
+                WHERE Id = :invoiceId
+                LIMIT 1
+            ];
+            
+            if (inv.X_Status__c != 'Synced') {
+                System.debug('Invoice not marked as "Synced".');
+                return;
+            }
+            
+            if (inv.Invoice_Lines1__r.isEmpty()) {
+                inv.Xero_Status__c = 'Error';
+                inv.Xero_Response__c = 'No Invoice Line Items found. Xero requires at least one.';
+                update inv;
+                return;
+            }
+            
+            Xero_Configuration_mdt__mdt config = [
+                SELECT Tenant_ID__c FROM Xero_Configuration_mdt__mdt LIMIT 1
+            ];
+            String tenantId = config.Tenant_ID__c;
+            
+            List<Object> lineItems = new List<Object>();
+            for (Invoice_Line__c line : inv.Invoice_Lines1__r) {
+                if (line.Quantity__c != null && line.X_Unit_Amount__c != null) {
+                    Map<String, Object> itemLine = new Map<String, Object>{
+                        'Description' => line.X_Description__c != null ? line.X_Description__c : 'Item',
+                            'Quantity' => line.Quantity__c,
+                            'UnitAmount' => line.X_Unit_Amount__c,
+                            'AccountCode' => line.AccountCode__c != null ? line.AccountCode__c : '200',
+                                'TaxType' => line.TaxType__c != null ? line.TaxType__c : 'NONE'
+                                    };
+                                        if (line.Product_Name__r != null && String.isNotBlank(line.Product_Name__r.Id)) {
+                                            itemLine.put('ItemCode', line.Product_Name__r.Id);
+                                        }
+                    lineItems.add(itemLine);
+                }
+            }
+            
+            
+            
+            if (lineItems.isEmpty()) {
+                inv.Xero_Status__c = 'Error';
+                inv.Xero_Response__c = 'All Invoice Lines were empty or invalid.';
+                update inv;
+                return;
+            }
+            
+            Map<String, Object> invoiceMap = new Map<String, Object>{
+                'Type' => 'ACCREC',
+                    'Contact' => new Map<String, Object>{ 'Name' => inv.Name },
+                        'Date' => String.valueOf(inv.Invoice_Date__c),
+                        'DueDate' => String.valueOf(inv.Due_Date__c),
+                        'LineItems' => lineItems,
+                        'Status' => 'AUTHORISED'
+                        };
+                            
+                            Map<String, Object> body = new Map<String, Object>{
+                                'Invoices' => new List<Object>{ invoiceMap }
+                            };
+                                
+                                HttpRequest req = new HttpRequest();
+            req.setEndpoint('callout:Xero_Named_Credential/api.xro/2.0/Invoices');
+            req.setMethod('POST');
+            req.setHeader('Content-Type', 'application/json');
+            req.setHeader('Accept', 'application/json');
+            req.setHeader('xero-tenant-id', tenantId);
+            req.setBody(JSON.serialize(body));
+            
+            Http http = new Http();
+            HttpResponse res = http.send(req);
+            
+            if (res.getStatusCode() == 200 || res.getStatusCode() == 201) {
+                // Check if the response is XML (error) or JSON (success)
+                if (res.getBody().startsWith('<')) {
+                    inv.Xero_Status__c = 'Error - Non-JSON response';
+                    inv.Xero_Response__c = res.getBody();
+                    update inv;
+                    return;
+                }
+                
+                Map<String, Object> resMap = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+                List<Object> invoices = (List<Object>) resMap.get('Invoices');
+                
+                if (!invoices.isEmpty()) {
+                    Map<String, Object> result = (Map<String, Object>) invoices[0];
+                    String xeroInvoiceId = (String) result.get('InvoiceID');
+                    String xeroStatus = (String) result.get('Status');
+                    
+                    inv.Xero_Invoice_ID__c = xeroInvoiceId;
+                    inv.Xero_Status__c = xeroStatus;
+                    inv.X_Status__c = 'Synced';
+                    inv.Xero_Response__c = 'Invoice sent successfully.';
+                    
+                    
+                    update inv;
+                } else {
+                    inv.Xero_Status__c = 'Error';
+                    inv.Xero_Response__c = 'Invoice sent, but no response returned.';
+                    update inv;
+                }
+            } else {
+                inv.Xero_Status__c = 'Error ' + res.getStatusCode();
+                inv.Xero_Response__c = res.getBody();
+                update inv;
+            }
+            
+        } catch (Exception e) {
+            System.debug('Exception: ' + e.getMessage());
+            Invoice__c errorInvoice = new Invoice__c(Id = invoiceId);
+            errorInvoice.Xero_Status__c = 'Exception';
+            errorInvoice.Xero_Response__c = e.getMessage();
+            update errorInvoice;
+        }
+    }
+}
